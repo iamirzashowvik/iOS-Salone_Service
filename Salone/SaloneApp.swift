@@ -9,9 +9,14 @@ import SwiftUI
 
 @main
 struct SaloneApp: App {
+    @StateObject private var serviceTypeController = ServiceTypeController()
+    
+    
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView().environment(
+                \.managedObjectContext,serviceTypeController.serviceTypeContainer.viewContext)
         }
     }
 }
