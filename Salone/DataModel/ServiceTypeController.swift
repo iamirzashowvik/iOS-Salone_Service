@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import CoreData
 
 class ServiceTypeController:ObservableObject{
@@ -39,6 +40,16 @@ class ServiceTypeController:ObservableObject{
     }
     func addHistory(id:String,context:NSManagedObjectContext){
         let service = ServiceX(context: context);
-        
+        service.id=id
+        service.date=Date()
+        save(context: context)
+    }
+    func getService(id:String,serviceTypes:FetchedResults<ServiceType>)->ServiceType{
+        for serviceType in serviceTypes {
+            if serviceType.id==id{
+                return serviceType
+            }
+        }
+        return serviceTypes[0];
     }
 }

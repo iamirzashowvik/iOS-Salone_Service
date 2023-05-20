@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  Salone
-//
-//  Created by Mirza  on 20/5/23.
-//
-
 import SwiftUI
 
 struct ContentView: View {
@@ -17,27 +10,31 @@ struct ContentView: View {
     @State private var isArrayLoaded = false
     @State private var serviceCount:[Int16]=[]
     
-    
+   func initialService(){
+       self.serviceCount = []
+       self.isArrayLoaded=false
+        for service in services {
+            self.serviceCount.append(service.usedTime)
+        }
+        self.isArrayLoaded=true;
+    }
     
     var body: some View {
         
         NavigationView{
             VStack(alignment:.leading ){
                 Text("Top Services").onAppear{
-                    for service in services {
-                        self.serviceCount.append(service.usedTime)
-                    }
-                    self.isArrayLoaded=true;
-                    
-                }.padding()
+                   initialService()
+                }.padding().bold()
+                if services.isEmpty {
+                    Text("No Service Available").padding()
+                }
                 List{
                     ForEach(Array(services.enumerated()),id: \.element){ index,service in
                         HStack{
                             VStack(alignment:.leading){
-                                Text("\(service.name!) ").bold()
-                                Text("\(String(format: "%.2f", service.price)) Taka")
-                                
-                            }
+                                Text("\(service.name!)").bold()
+                                Text("\(String(format: "%.2f", service.price)) Taka")}
                             Spacer()
                             if service.usedTime>0{
                                 HStack{
@@ -48,17 +45,14 @@ struct ContentView: View {
                             Spacer()
                             Button(action: {}, label: {Image(systemName: "plus.app")}).onTapGesture {
                                 self.serviceCount[index] += 1 ;
-                                print("plus called")
-                                
-                                print(self.serviceCount)
                                 ServiceTypeController().editServiceType(usedTime: self.serviceCount[index], serviceType: service, context: managedObject)
-                                
-                                
-                                
+                                ServiceTypeController().addHistory(id: service.id!, context: managedObject)
+                                initialService()
                             }
                             
-                        }.onDelete(perform: deleteProduct)
-                    }
+                        }
+                        
+                    }.onDelete(perform: deleteService)
                     
                 }.navigationTitle("Salone")
                     .toolbar{
@@ -91,17 +85,16 @@ struct ContentView: View {
             }
         }
         
-    func deleteProduct(offsets:IndexSet){
+    }
+    func deleteService(offsets:IndexSet){
         withAnimation {
             offsets.map { services[$0] }.forEach (managedObject.delete)
-        ServiceTypeController() . save (context: managedObject)
+            ServiceTypeController().save(context: managedObject)
         }
-    }
-}
-
+    }}
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
     }
 }
-}
+

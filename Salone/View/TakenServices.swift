@@ -10,7 +10,9 @@ import SwiftUI
 struct TakenServices: View {
     
     @Environment(\.managedObjectContext) var managedObject
-    @FetchRequest(sortDescriptors: [SortDescriptor(\.date,order:.reverse)]) var services:FetchedResults<ServiceType>
+    @FetchRequest(sortDescriptors: [SortDescriptor(\.date,order:.reverse)]) var services:FetchedResults<ServiceX>
+    @FetchRequest(sortDescriptors: [SortDescriptor(\.date,order:.reverse)]) var servicesType:FetchedResults<ServiceType>
+    
     @Environment(\.dismiss) var dismiss
     
     
@@ -18,7 +20,7 @@ struct TakenServices: View {
     @State private var showingAlert = false
     @State private var productCount:[Int16]=[]
     @State private var isArrayLoaded = false
-    @State private var totalPrice:Float = 0.0
+    @State private var totalIncome:Float = 0.0
     @State private var tips:Float=10.0
     
   
@@ -28,10 +30,30 @@ struct TakenServices: View {
        
         
             VStack(alignment:.leading ){
-               
+                HStack{
+                    Text("Service").onAppear{
+                        print(services)
+                        print(servicesType)
+                        self.totalIncome = 0.0
+                        for service in services{
+                            self.totalIncome += ServiceTypeController().getService(id: service.id!, serviceTypes:  servicesType).price
+                        }
+                    }
+                    Spacer()
+                    Button(action: {
+                        dismiss()
+                    }, label: {Image(systemName: "arrow.backward")}).onTapGesture {
+                        dismiss();
+                    }
+                    
+                }.padding()
+                Text("Total Income \(String(format: "%.2f",self.totalIncome))").padding()
                 List{
                     ForEach(services) { service in
-                        Text(service.id!)
+                        VStack(alignment: .leading){
+                            Text(ServiceTypeController().getService(id: service.id!, serviceTypes:  servicesType).name!)
+                            Text(calcTimeSince(date:service.date!))
+                        }
                     }
                 }
                
