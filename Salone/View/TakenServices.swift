@@ -23,38 +23,66 @@ struct TakenServices: View {
     @State private var totalIncome:Float = 0.0
     @State private var tips:Float=10.0
     
+   
+        var date: Date
+
+        init(date: Date) {
+            self.date=date
+        }
   
-    
+    func initialization(){
+       
+      
+        self.totalIncome = 0.0
+        for service in services{
+            if isSameDay(date1: service.date!, date2: date) {
+                self.totalIncome += ServiceTypeController().getService(id: service.id!, serviceTypes:  servicesType).price
+            }
+        }
+    }
+    var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }
     var body: some View {
       
        
         
             VStack(alignment:.leading ){
                 HStack{
-                    Text("Service").onAppear{
-                        print(services)
-                        print(servicesType)
-                        self.totalIncome = 0.0
-                        for service in services{
-                            self.totalIncome += ServiceTypeController().getService(id: service.id!, serviceTypes:  servicesType).price
-                        }
+                    Text("Service History").onAppear{
+                       initialization()
+                       
                     }
                     Spacer()
-                    Button(action: {
-                        dismiss()
-                    }, label: {Image(systemName: "arrow.backward")}).onTapGesture {
-                        dismiss();
-                    }
+                   
                     
                 }.padding()
-                Text("Total Income \(String(format: "%.2f",self.totalIncome))").padding()
+                if totalIncome>0.0{
+                    Text("Total Income \(String(format: "%.2f",self.totalIncome)) of \(date, formatter: dateFormatter)").padding()
+                }
+                
+                if totalIncome==0.0 {
+                    Spacer()
+                    HStack{
+                        Spacer()
+                        Text("No Service done in \(date, formatter: dateFormatter)")
+                        Spacer()
+                        
+                    }
+                }
                 List{
                     ForEach(services) { service in
-                        VStack(alignment: .leading){
-                            Text(ServiceTypeController().getService(id: service.id!, serviceTypes:  servicesType).name!)
-                            Text(calcTimeSince(date:service.date!))
+                       
+                            if isSameDay(date1: service.date!, date2: date) {
+                                VStack(alignment: .leading){
+                                Text(ServiceTypeController().getService(id: service.id!, serviceTypes:  servicesType).name!)
+                                Text(calcTimeSince(date:service.date!))
+                            }
                         }
-                    }
+                    }.onDelete(perform: deleteProduct)
                 }
                
         }.navigationViewStyle(.stack).alert("Important message", isPresented: $showingAlert) {
@@ -70,6 +98,7 @@ struct TakenServices: View {
         withAnimation {
             offsets.map { services[$0] }.forEach (managedObject.delete)
       ServiceTypeController() . save (context: managedObject)
+            initialization()
         }
     }
     let doubleFormatter: NumberFormatter = {

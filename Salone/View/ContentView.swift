@@ -3,18 +3,22 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.managedObjectContext) var managedObject
     @FetchRequest(sortDescriptors: [SortDescriptor(\.date,order:.reverse)]) var services:FetchedResults<ServiceType>
+    @FetchRequest(sortDescriptors: [SortDescriptor(\.date,order:.reverse)]) var servicesX:FetchedResults<ServiceX>
     
     @State private var showingAddView = false
     @State private var showingCart = false
     @State private var showingAlert = false
     @State private var isArrayLoaded = false
     @State private var serviceCount:[Int16]=[]
+    @State private var birthDate = Date.now
+    @State private var datepickerCounter=0
+    @State private var navigateToSecondPage = false
     
    func initialService(){
-       self.serviceCount = []
+       self.serviceCount=[];
        self.isArrayLoaded=false
         for service in services {
-            self.serviceCount.append(service.usedTime)
+            self.serviceCount.append(ServiceTypeController().getServiceCount(id: service.id!, services: servicesX))
         }
         self.isArrayLoaded=true;
     }
@@ -27,55 +31,88 @@ struct ContentView: View {
                    initialService()
                 }.padding().bold()
                 if services.isEmpty {
-                    Text("No Service Available").padding()
+                    HStack{
+                        Spacer()
+                        VStack{
+                            AsyncImage(url: URL(string: "https://i.pinimg.com/originals/ae/8a/c2/ae8ac2fa217d23aadcc913989fcc34a2.png"), content: { image in
+                                       image.resizable()
+                                   }, placeholder: {
+                                       ProgressView()
+                                   })
+                                       .frame(width: 100, height: 100)
+                                       .clipShape(Circle())
+                            Text("No Service Available").padding()
+                        }
+                        Spacer()
+                    }
                 }
-                List{
-                    ForEach(Array(services.enumerated()),id: \.element){ index,service in
-                        HStack{
-                            VStack(alignment:.leading){
-                                Text("\(service.name!)").bold()
-                                Text("\(String(format: "%.2f", service.price)) Taka")}
-                            Spacer()
-                            if service.usedTime>0{
-                                HStack{
-                                    Text("\(service.usedTime)")
-                                    Image(systemName: "checkmark")
+                if self.isArrayLoaded {
+                    List{
+                        ForEach(Array(services.enumerated()),id: \.element){ index,service in
+                            HStack{
+                                VStack(alignment:.leading){
+                                    Text("\(service.name!)").bold()
+                                    Text("\(String(format: "%.2f", service.price)) Taka")}
+                                Spacer()
+                                if self.serviceCount[index]>0{
+                                    HStack{
+                                        Button(action: {}, label: {Image(systemName: "minus.square")}).onTapGesture {
+                                            self.serviceCount[index] -= 1 ;
+                                            ServiceTypeController().editServiceType(usedTime: self.serviceCount[index], serviceType: service, context: managedObject)
+                                            ServiceTypeController().delete1ServiceFromHistory(id: service.id!, services: servicesX, context: managedObject)
+                                            if self.serviceCount[index]==0 {
+                                                ServiceTypeController().deleteServiceFromHistory(id: service.id!, services: servicesX, context: managedObject)
+                                            }
+                                            initialService()
+                                        }
+                                        Text("\(self.serviceCount[index])")
+                                       
+                                    }
                                 }
-                            }
-                            Spacer()
-                            Button(action: {}, label: {Image(systemName: "plus.app")}).onTapGesture {
-                                self.serviceCount[index] += 1 ;
-                                ServiceTypeController().editServiceType(usedTime: self.serviceCount[index], serviceType: service, context: managedObject)
-                                ServiceTypeController().addHistory(id: service.id!, context: managedObject)
-                                initialService()
+                               
+                                Button(action: {}, label: {Image(systemName: "plus.app")}).onTapGesture {
+                                    self.serviceCount[index] += 1 ;
+                                    ServiceTypeController().editServiceType(usedTime: self.serviceCount[index], serviceType: service, context: managedObject)
+                                    ServiceTypeController().addHistory(id: service.id!, context: managedObject)
+                                    initialService()
+                                }
+                                
                             }
                             
+                        }.onDelete(perform: deleteService)
+                        DatePicker(selection: $birthDate, in: ...Date.now, displayedComponents: .date) {
+                                       Text("Check history")
+                        }.onTapGesture {
+                            self.updateWeekAndDayFromDate()
                         }
-                        
-                    }.onDelete(perform: deleteService)
-                    
-                }.navigationTitle("Salone")
-                    .toolbar{
-                        ToolbarItem(placement: .navigationBarTrailing ){
-                            Button{
-                                showingAddView.toggle();
-                            } label: {
-                                Label("Add Product",systemImage: "plus.circle")
+                    }.navigationTitle("Salone")
+                        .toolbar{
+                            ToolbarItem(placement: .navigationBarTrailing ){
+                                if servicesX.count>0 {
+
+                                    NavigationLink(destination: TakenServices(date:birthDate ).onDisappear() {
+                                        initialService()
+                                        print("Hello world!exit")
+                                    },isActive: $navigateToSecondPage) {
+                                                    Label("Work Folder", systemImage: "clock.arrow.circlepath")
+                                    }.hidden()
+                                }
                             }
-                        }
-                        ToolbarItem(placement: .navigationBarTrailing ){
-                            Button{
-                                showingCart.toggle();
-                            } label: {
-                                Label("Cart",systemImage: "cart")
+                            ToolbarItem(placement: .navigationBarTrailing ){
+
+                                NavigationLink(destination: AddServiceTypeView().onDisappear() {
+                                    initialService()
+                                   
+                                }) {
+                                                Label("Work Folder", systemImage: "plus.circle")
+                                            }
                             }
+                            
+                        }.sheet(isPresented: $showingAddView){
+                            AddServiceTypeView()
                         }
-                    }.sheet(isPresented: $showingAddView){
-                        AddServiceTypeView()
-                    }
-                    .sheet(isPresented: $showingCart){
-                        TakenServices()
-                    }
+                      
+                }
             }.navigationViewStyle(.stack).alert("Important message", isPresented: $showingAlert) {
                 Button("OK", role: .cancel) { }
             }
@@ -86,6 +123,14 @@ struct ContentView: View {
         }
         
     }
+    func updateWeekAndDayFromDate() {
+        datepickerCounter+=1;
+        if datepickerCounter%2==0{
+            print(birthDate)
+          navigateToSecondPage = true
+        }
+            
+        }
     func deleteService(offsets:IndexSet){
         withAnimation {
             offsets.map { services[$0] }.forEach (managedObject.delete)

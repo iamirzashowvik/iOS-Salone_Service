@@ -44,6 +44,7 @@ class ServiceTypeController:ObservableObject{
         service.date=Date()
         save(context: context)
     }
+    
     func getService(id:String,serviceTypes:FetchedResults<ServiceType>)->ServiceType{
         for serviceType in serviceTypes {
             if serviceType.id==id{
@@ -51,5 +52,33 @@ class ServiceTypeController:ObservableObject{
             }
         }
         return serviceTypes[0];
+    }
+    
+    func getServiceCount(id:String,services:FetchedResults<ServiceX>)->Int16{
+        var count:Int16=0
+        for service in services {
+            if service.id==id{
+                count += 1 ;
+            }
+        }
+        return count;
+    }
+    
+    
+    
+    func delete1ServiceFromHistory (id:String, services:FetchedResults<ServiceX>, context:NSManagedObjectContext) {
+        for service in services {
+            if service.id==id{
+                context.delete(service)
+                return;
+            }
+        }
+    }
+    func deleteServiceFromHistory (id:String, services:FetchedResults<ServiceX>, context:NSManagedObjectContext) {
+        for service in services {
+            if service.id==id{
+                context.delete(service)
+            }
+        }
     }
 }
