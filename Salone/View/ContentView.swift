@@ -54,7 +54,7 @@ struct ContentView: View {
                                     Text("\(service.name!)").bold()
                                     Text("\(String(format: "%.2f", service.price)) Taka")}
                                 Spacer()
-                                if self.serviceCount[index]>0{
+                                if self.serviceCount.count>0{
                                     HStack{
                                         Button(action: {}, label: {Image(systemName: "minus.square")}).onTapGesture {
                                             self.serviceCount[index] -= 1 ;
@@ -65,7 +65,9 @@ struct ContentView: View {
                                             }
                                             initialService()
                                         }
-                                        Text("\(self.serviceCount[index])")
+                                        if self.serviceCount.count==services.count {
+                                            Text("\(self.serviceCount[index])")
+                                        }
                                        
                                     }
                                 }
